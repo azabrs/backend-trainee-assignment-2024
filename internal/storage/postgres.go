@@ -41,7 +41,6 @@ func(pg *Postgres)SelectBanner(featureID, tagID int64, bannerdata *model.Request
 	return nil
 }
 
-//.Scan(&bannerdata.FeatureId, &banner_id, &bannerdata.Content, &bannerdata.IsActive)
 func(pg *Postgres)SelectFiltredBanners(featureID, tagID, limit, offset int64) ([]model.RequestFiltredBodyBanners, error){
 	query := `SELECT banners.feature_id, banners.id, banners_data.title, banners_data.text_content, banners_data.url_content, banners.is_active
 	FROM banners_data
