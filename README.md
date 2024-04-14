@@ -2,9 +2,9 @@
 Добавил в api новый функционал
 ## Инструменты
 Для реализации задания я использовал:
-**Gin** - веб фреймворк https://pkg.go.dev/github.com/gin-gonic/gin@v1.9.1
-**Postgressql** - для организации баз данных https://pkg.go.dev/github.com/lib/pq@v1.10.9
-**JWT** - для авторизации https://github.com/dgrijalva/jwt-go
+- **Gin** - веб фреймворк https://pkg.go.dev/github.com/gin-gonic/gin@v1.9.1
+- **Postgressql** - для организации баз данных https://pkg.go.dev/github.com/lib/pq@v1.10.9
+- **JWT** - для авторизации https://github.com/dgrijalva/jwt-go
 ##Строка запуска
 docker compose up
 ##Тест функции получения баннера находится в папке test
