@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	_ "github.com/lib/pq"
 )
@@ -28,12 +27,12 @@ func InitDb(c config.PostgresConfig) (Postgres, error){
 }
 
 func(pg *Postgres)SelectBanner(featureID, tagID int64, bannerdata *model.RequestBodyBanner) (error){
-	query := `SELECT banners.id, banners.feature_id, banner_tags.tag_id, banners_data.content, banners.is_active
+	query := `SELECT banners.id, banners.feature_id, banner_tags.tag_id, banners_data.title, banners_data.text_content, banners_data.url_content, banners.is_active
 	FROM banners_data
 	INNER JOIN banners ON banners.data_id = banners_data.id
 	INNER JOIN banner_tags ON banners.id = banner_tags.banner_id 
 	WHERE banners.feature_id = $1 AND banner_tags.tag_id = $2`
-	if err := pg.Db.QueryRow(query, featureID, tagID).Scan(&bannerdata.BannerID, &bannerdata.FeatureId, &bannerdata.TagIds, &bannerdata.Content, &bannerdata.IsActive); err != nil{
+	if err := pg.Db.QueryRow(query, featureID, tagID).Scan(&bannerdata.BannerID, &bannerdata.FeatureId, &bannerdata.TagIds, &bannerdata.Content.Title, &bannerdata.Content.TextContent, &bannerdata.Content.UrlContent, &bannerdata.IsActive); err != nil{
 		if errors.Is(err, sql.ErrNoRows){
 			return custom_errors.ErrBannerNotFound
 		}
@@ -44,12 +43,12 @@ func(pg *Postgres)SelectBanner(featureID, tagID int64, bannerdata *model.Request
 
 //.Scan(&bannerdata.FeatureId, &banner_id, &bannerdata.Content, &bannerdata.IsActive)
 func(pg *Postgres)SelectFiltredBanners(featureID, tagID, limit, offset int64) ([]model.RequestFiltredBodyBanners, error){
-	query := `SELECT banners.feature_id, banners.id, banners_data.content, banners.is_active
+	query := `SELECT banners.feature_id, banners.id, banners_data.title, banners_data.text_content, banners_data.url_content, banners.is_active
 	FROM banners_data
 	INNER JOIN banners ON banners.data_id = banners_data.id
 	INNER JOIN banner_tags ON banners.id = banner_tags.banner_id 
 	WHERE ($1 = -1 or banners.feature_id = $1) AND ($2 = -1 OR banner_tags.tag_id = $2)
-	GROUP BY banners.id, banners.feature_id, banners_data.content, banners.is_active
+	GROUP BY banners.id, banners.feature_id, banners_data.title, banners_data.text_content, banners_data.url_content, banners.is_active
 `
 	query_tag := `SELECT banner_tags.tag_id FROM banner_tags
 				INNER JOIN banners ON banners.id = banner_tags.banner_id 
@@ -62,7 +61,7 @@ func(pg *Postgres)SelectFiltredBanners(featureID, tagID, limit, offset int64) ([
 	}
 	for rows.Next(){
 		var banner model.RequestFiltredBodyBanners
-		rows.Scan(&banner.FeatureId, &banner.BannerId, &banner.Content, &banner.IsActive)
+		rows.Scan(&banner.FeatureId, &banner.BannerId, &banner.Content.Title, &banner.Content.TextContent, &banner.Content.UrlContent, &banner.IsActive)
 		tags, err := pg.Db.Query(query_tag, banner.BannerId)
 		if err != nil{
 			return []model.RequestFiltredBodyBanners{}, err
@@ -102,9 +101,9 @@ func (pg *Postgres) CreateBanner(banner model.RequestFiltredBodyBanners) error{
 	var data_id int
 	pg.Db.QueryRow(query).Scan(&data_id)
 
-	query = `INSERT INTO banners_data (id, content)
-	VALUES($1, $2)`
-	if _, err = pg.Db.Exec(query, data_id + 1, banner.Content); err != nil{
+	query = `INSERT INTO banners_data (id, title, text_content, url_content)
+	VALUES($1, $2, $3, $4)`
+	if _, err = pg.Db.Exec(query, data_id + 1, banner.Content.Title, banner.Content.TextContent, banner.Content.UrlContent); err != nil{
 		return err
 	}
 
@@ -139,7 +138,7 @@ func (pg *Postgres) UpdateBanner(newbanner model.RequestFiltredBodyBanners) erro
 		var banner model.RequestBodyBanner
 		err := pg.SelectBanner(int64(tag), int64(newbanner.FeatureId), &banner)
 		if err != nil {
-			if strings.Contains(err.Error(), "no rows in result set") {
+			if errors.Is(err, custom_errors.ErrBannerNotFound) {
 				continue
 			}
 		}
@@ -195,13 +194,25 @@ func (pg *Postgres) UpdateBanner(newbanner model.RequestFiltredBodyBanners) erro
 
 	query = `
 	UPDATE banners_data
-	SET content = $2
+	SET title = $2, text_content = $3, url_content = $4
 	WHERE id = $1;
 	`
-	_, err = pg.Db.Exec(query, dataIdOld, newbanner.Content)
+	_, err = pg.Db.Exec(query, dataIdOld, newbanner.Content.Title, newbanner.Content.TextContent, newbanner.Content.UrlContent)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (pg *Postgres) Register(login, hashPassword string, isAdmin bool) error{
+	query := `INSERT INTO users(login, password_hash, is_admin) VALUES($1, $2, $3)`
+	
+	_, err := pg.Db.Exec(query, login, hashPassword, isAdmin)
+	if err != nil{
+		return custom_errors.ErrAlreadyRegistered
+	}
+
+
 	return nil
 }
 
@@ -210,7 +221,7 @@ func (pg *Postgres) IsBannerExist(banner model.RequestFiltredBodyBanners) (bool,
 	for _, tag := range(banner.TagIds){
 		var m model.RequestBodyBanner
 		if err := pg.SelectBanner(int64(banner.FeatureId), int64(tag), &m); err != nil{
-			if strings.Contains(err.Error(), "no rows in result set") {
+			if errors.Is(err, custom_errors.ErrBannerNotFound) {
 				continue
 			}
 			return false, err
@@ -220,19 +231,3 @@ func (pg *Postgres) IsBannerExist(banner model.RequestFiltredBodyBanners) (bool,
 	return false, nil
 }
 
-func (pg *Postgres) Register(login, hashPassword string, isAdmin bool) error{
-	query := `INSERT INTO users(login, password_hash, is_admin) VALUES($1, $2, $3)`
-	
-	res, err := pg.Db.Exec(query, login, hashPassword, isAdmin)
-	if err != nil{
-		return err
-	}
-	count, err := res.RowsAffected()
-	if err != nil{
-		return err
-	} 
-	if count == 0{
-		return custom_errors.ErrAlreadyRegistered
-	}
-	return nil
-}

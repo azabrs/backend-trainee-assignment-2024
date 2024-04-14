@@ -1,10 +1,10 @@
 package jwt
 
 import (
+	custom_errors "backend-trainee-assignment-2024/errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-
 )
 
 type Claims struct {
@@ -36,8 +36,11 @@ func CheckIsAdminInJWT(tokenString string, signingKey string) (bool, error) {
 		return []byte(signingKey), nil
 	})
 
-	if err != nil || !token.Valid {
+	if err != nil{
 		return false, err
+	}
+	if !token.Valid{
+		return false, custom_errors.ErrAdminRequired
 	}
 
 	return claims.IsAdmin, nil

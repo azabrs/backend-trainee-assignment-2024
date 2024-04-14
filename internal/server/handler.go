@@ -246,7 +246,7 @@ func (s *Server)DeleteBanner(c *gin.Context){
 
 func(s * Server)Register(c *gin.Context){
 	var AuthorizationData model.AuthorizationData
-	if err := c.ShouldBindJSON(&AuthorizationData); err != nil{
+	if err := c.ShouldBindQuery(&AuthorizationData); err != nil{
 		log.Println(err)
 		c.String(http.StatusBadRequest, fmt.Sprintf("Error: %s", err))
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -254,9 +254,9 @@ func(s * Server)Register(c *gin.Context){
 	}
 
 	var isAdmin bool
-	if c.GetHeader("Admin") == "true"{
+	if c.GetHeader("is_admin") == "true"{
 		isAdmin = true
-	} else if c.GetHeader("admin") != "false" && c.GetHeader("admin") != "" {
+	} else if c.GetHeader("is_admin") != "false" && c.GetHeader("is_admin") != "" {
 		log.Println("incorrect admin field")
 		c.String(http.StatusBadRequest, fmt.Sprintf("Error: %s", "incorrect admin field"))
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -291,7 +291,6 @@ func(s * Server)Register(c *gin.Context){
 		return
 	}
 	buf := map[string]string{"Token" : tokenStr}
-	c.String(http.StatusInternalServerError, fmt.Sprintf("Error: %s", err))
 	c.JSON(http.StatusCreated, buf)
 	c.AbortWithStatus(http.StatusCreated)
 }

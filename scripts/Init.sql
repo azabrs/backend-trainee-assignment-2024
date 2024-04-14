@@ -1,7 +1,8 @@
 CREATE TABLE banners_data (
     id INT PRIMARY KEY,
-    content VARCHAR(100) NOT NULL
-
+    title        TEXT NOT NULL,
+    text_content TEXT NOT NULL,
+    url_content  TEXT NOT NULL
 );
 
 CREATE TABLE banners (

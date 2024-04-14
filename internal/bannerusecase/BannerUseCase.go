@@ -22,7 +22,7 @@ func (buc BannerUseCase) GetBanner(param model.GetUserBannerParam, isAdmin bool)
 	if err := buc.psql.SelectBanner(param.FeatureID, param.TagID, &bannerdata); err != nil{
 		return model.RequestBodyBanner{}, err
 	}
-	if !bannerdata.IsActive && isAdmin{
+	if !bannerdata.IsActive && !isAdmin{
 		return model.RequestBodyBanner{}, fmt.Errorf("banner innactive")
 	}
 	return bannerdata, nil

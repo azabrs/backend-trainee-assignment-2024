@@ -14,10 +14,10 @@ INSERT INTO tags (name) VALUES
 ('magenta'),
 ('turquoise'),
 ('lime');
-INSERT INTO banners_data (id, content) VALUES
-(101, 'FIRST BANNER'),
-(102, 'SECOND BANNER'),
-(103, 'THIRD BANNER');
+INSERT INTO banners_data (id, title, text_content, url_content) VALUES
+(101, 'FIRST title', 'FIRST BANNER', 'FIRST URL'),
+(102, 'SECOND title', 'SECOND BANNER', 'SECOND URL'),
+(103, 'THIRD title', 'THIRD BANNER', 'THIRD URL');
 INSERT INTO banners (feature_id, data_id, is_active) VALUES 
 (1, 101, true),
 (2, 102, false),
