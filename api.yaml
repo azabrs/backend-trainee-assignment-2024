@@ -3,6 +3,65 @@ info:
   title: Сервис баннеров
   version: 1.0.0
 paths:
+  /register:
+    post:
+      summary: Авторизация и получение токена
+      parameters:
+        - in: query
+          name: login
+          required: true
+          schema:
+            type: string
+            description: Логин пользователя
+        - in: query
+          name: password
+          required: true
+          schema:
+            type: string
+            description: Пароль пользователя      
+        - in: header
+          name: is_admin
+          description: Токен пользователя
+          schema:
+            type: string
+            example: "user_token"
+      responses:
+        '201': 
+          description: Токен успешно получен
+          content:
+            application/json:
+              schema:
+                description: token
+                type: object
+                additionalProperties: true
+                example: '{"Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTMxOTU5MTEsImlzQWRtaW4iOmZhbHNlfQ.PhFmgA0xxgffviLubVsy-6PTIvq-JDY4wwaEiAlqu30"}'
+        '400':
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '409':
+          description: Конфликт
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   /user_banner:
     get:
       summary: Получение баннера для пользователя
