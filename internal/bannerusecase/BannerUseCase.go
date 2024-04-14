@@ -17,12 +17,12 @@ func New(psql postgres.Postgres) BannerUseCase{
 }
 
 
-func (buc BannerUseCase) GetBanner(param model.GetUserBannerParam) (model.RequestBodyBanner, error){
+func (buc BannerUseCase) GetBanner(param model.GetUserBannerParam, isAdmin bool) (model.RequestBodyBanner, error){
 	var bannerdata model.RequestBodyBanner
 	if err := buc.psql.SelectBanner(param.FeatureID, param.TagID, &bannerdata); err != nil{
 		return model.RequestBodyBanner{}, err
 	}
-	if !bannerdata.IsActive{
+	if !bannerdata.IsActive && isAdmin{
 		return model.RequestBodyBanner{}, fmt.Errorf("banner innactive")
 	}
 	return bannerdata, nil

@@ -31,8 +31,16 @@ func (s *Server)GetUserBanner(c *gin.Context){
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	isAdmin, err := s.authorization.IsAdmin(param.Token)
+	if err != nil{
+		log.Println(err)
+		c.String(http.StatusUnauthorized, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 
-	data, err := s.buc.GetBanner(param)
+
+	data, err := s.buc.GetBanner(param, isAdmin)
 	if err != nil{
 		if err == custom_errors.ErrBannerNotFound{
 			log.Println(err)
@@ -78,10 +86,21 @@ func (s *Server)GetFiltredBanners(c *gin.Context){
 		return
 	}
 	param.Token = c.GetHeader("token")
-	if param.Token == "" || (param.TagID == 0 && param.FeatureID == 0){
-		log.Println("Bad param")
-		c.String(http.StatusBadRequest, "Bad param")
+	if param.Token == ""{
+		log.Println("Unable get token")
+		c.String(http.StatusBadRequest, "Unable get token")
 		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	isAdmin, err := s.authorization.IsAdmin(param.Token)
+	if err != nil{
+		log.Println(err)
+		c.String(http.StatusUnauthorized, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if !isAdmin{
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 	banners, err := s.buc.GetFiltredBanners(param)
@@ -98,6 +117,26 @@ func (s *Server)GetFiltredBanners(c *gin.Context){
 func (s *Server)CreateBanner(c *gin.Context){
 	var bodydata model.RequestFiltredBodyBanners
 	c.ShouldBindBodyWith(&bodydata, binding.JSON)
+	
+	Token := c.GetHeader("token")
+	if Token == ""{
+		log.Println("Unable get token")
+		c.String(http.StatusBadRequest, "Unable get token")
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	isAdmin, err := s.authorization.IsAdmin(Token)
+	if err != nil{
+		log.Println(err)
+		c.String(http.StatusUnauthorized, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if !isAdmin{
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 
 	if err := s.buc.CreateBanner(bodydata); err != nil{
 		log.Println(err)
@@ -122,6 +161,27 @@ func (s *Server)UpdateBanner(c *gin.Context){
 		return
 	}
 	bodydata.BannerId = banner_id
+
+	Token := c.GetHeader("token")
+	if Token == ""{
+		log.Println("Unable get token")
+		c.String(http.StatusBadRequest, "Unable get token")
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	isAdmin, err := s.authorization.IsAdmin(Token)
+	if err != nil{
+		log.Println(err)
+		c.String(http.StatusUnauthorized, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if !isAdmin{
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+
 	if err := s.buc.UpdateBanner(bodydata); err != nil{
 		if errors.Is(err, custom_errors.ErrBannerNotFound){
 			log.Println(err)
@@ -147,6 +207,27 @@ func (s *Server)DeleteBanner(c *gin.Context){
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+
+	Token := c.GetHeader("token")
+	if Token == ""{
+		log.Println("Unable get token")
+		c.String(http.StatusBadRequest, "Unable get token")
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	isAdmin, err := s.authorization.IsAdmin(Token)
+	if err != nil{
+		log.Println(err)
+		c.String(http.StatusUnauthorized, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if !isAdmin{
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+
 	if err := s.buc.DeleteBanner(banner_id); err != nil{
 		if errors.Is(err, custom_errors.ErrBannerNotFound){
 			log.Println(err)
