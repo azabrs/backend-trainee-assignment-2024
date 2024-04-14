@@ -5,8 +5,8 @@ import (
 	custom_errors "backend-trainee-assignment-2024/errors"
 	"backend-trainee-assignment-2024/internal/model"
 	"database/sql"
+	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -33,8 +33,10 @@ func(pg *Postgres)SelectBanner(featureID, tagID int64, bannerdata *model.Request
 	INNER JOIN banners ON banners.data_id = banners_data.id
 	INNER JOIN banner_tags ON banners.id = banner_tags.banner_id 
 	WHERE banners.feature_id = $1 AND banner_tags.tag_id = $2`
-
 	if err := pg.Db.QueryRow(query, featureID, tagID).Scan(&bannerdata.BannerID, &bannerdata.FeatureId, &bannerdata.TagIds, &bannerdata.Content, &bannerdata.IsActive); err != nil{
+		if errors.Is(err, sql.ErrNoRows){
+			return custom_errors.ErrBannerNotFound
+		}
 		return err
 	}
 	return nil
@@ -81,9 +83,8 @@ func (pg *Postgres) DeleteBanner(id int) error{
 			WHERE id = $1;
 			`
 	res, err := pg.Db.Exec(query, id)
-	if c, err := res.RowsAffected(); c == 0{
-		log.Println(err)
-		return fmt.Errorf("the banner for the tag was not found")
+	if c, err := res.RowsAffected(); c == 0 || err != nil{
+		return custom_errors.ErrBannerNotFound
 	}
 	return err
 }
@@ -156,7 +157,7 @@ func (pg *Postgres) UpdateBanner(newbanner model.RequestFiltredBodyBanners) erro
 				`
 	err := pg.Db.QueryRow(query, int(newbanner.BannerId)).Scan(&dataIdOldStr)
 	if err != nil {
-		return err
+		return custom_errors.ErrBannerNotFound
 	}
 	dataIdOld, err := strconv.Atoi(dataIdOldStr)
 	if err != nil {
@@ -221,10 +222,17 @@ func (pg *Postgres) IsBannerExist(banner model.RequestFiltredBodyBanners) (bool,
 
 func (pg *Postgres) Register(login, hashPassword string, isAdmin bool) error{
 	query := `INSERT INTO users(login, password_hash, is_admin) VALUES($1, $2, $3)`
-	if _, err := pg.Db.Exec(query, login, hashPassword, isAdmin); err != nil{
-		return custom_errors.ErrAlreadyRegistered// to do
-	} else{
+	
+	res, err := pg.Db.Exec(query, login, hashPassword, isAdmin)
+	if err != nil{
 		return err
+	}
+	count, err := res.RowsAffected()
+	if err != nil{
+		return err
+	} 
+	if count == 0{
+		return custom_errors.ErrAlreadyRegistered
 	}
 	return nil
 }

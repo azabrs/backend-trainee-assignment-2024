@@ -34,8 +34,13 @@ func (s *Server)GetUserBanner(c *gin.Context){
 
 	data, err := s.buc.GetBanner(param)
 	if err != nil{
+		if err == custom_errors.ErrBannerNotFound{
+			log.Println(err)
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 		log.Println(err)
-		c.String(http.StatusNotFound, "")
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 	c.JSON(http.StatusOK, data.Content)
@@ -82,8 +87,8 @@ func (s *Server)GetFiltredBanners(c *gin.Context){
 	banners, err := s.buc.GetFiltredBanners(param)
 	if err != nil{
 		log.Println(err)
-		c.String(http.StatusNotFound, fmt.Sprintf("Error: %s", err))
-		c.AbortWithStatus(http.StatusNotFound)
+		c.String(http.StatusInternalServerError, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 	c.JSON(http.StatusOK, banners)
@@ -96,8 +101,8 @@ func (s *Server)CreateBanner(c *gin.Context){
 
 	if err := s.buc.CreateBanner(bodydata); err != nil{
 		log.Println(err)
-		c.String(http.StatusBadRequest, fmt.Sprintf("Error: %s", err))
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.String(http.StatusInternalServerError, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 	c.String(http.StatusCreated  , "")
@@ -118,9 +123,15 @@ func (s *Server)UpdateBanner(c *gin.Context){
 	}
 	bodydata.BannerId = banner_id
 	if err := s.buc.UpdateBanner(bodydata); err != nil{
+		if errors.Is(err, custom_errors.ErrBannerNotFound){
+			log.Println(err)
+			c.String(http.StatusNotFound, fmt.Sprintf("Error: %s", err))
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 		log.Println(err)
-		c.String(http.StatusNotFound, fmt.Sprintf("Error: %s", err))
-		c.AbortWithStatus(http.StatusNotFound)
+		c.String(http.StatusInternalServerError, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 	c.String(http.StatusNoContent, "")
@@ -137,9 +148,15 @@ func (s *Server)DeleteBanner(c *gin.Context){
 		return
 	}
 	if err := s.buc.DeleteBanner(banner_id); err != nil{
+		if errors.Is(err, custom_errors.ErrBannerNotFound){
+			log.Println(err)
+			c.String(http.StatusNotFound, fmt.Sprintf("Error: %s", err))
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 		log.Println(err)
-		c.String(http.StatusNotFound, fmt.Sprintf("Error: %s", err))
-		c.AbortWithStatus(http.StatusNotFound)
+		c.String(http.StatusInternalServerError, fmt.Sprintf("Error: %s", err))
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 	c.String(http.StatusNoContent, "")
