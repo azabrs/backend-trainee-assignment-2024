@@ -194,8 +194,8 @@ func (s *Server)UpdateBanner(c *gin.Context){
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	c.String(http.StatusNoContent, "")
-	c.AbortWithStatus(http.StatusNoContent)
+	c.String(http.StatusOK, "")
+	c.AbortWithStatus(http.StatusOK)
 }
 
 func (s *Server)DeleteBanner(c *gin.Context){

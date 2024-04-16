@@ -230,3 +230,39 @@ func (pg *Postgres) IsBannerExist(banner model.RequestFiltredBodyBanners) (bool,
 	return false, nil
 }
 
+func(pg *Postgres)GetAllBanners() ([]model.RequestFiltredBodyBanners, error){
+	query := `SELECT banners.id, banners.feature_id, banners_data.title, banners_data.text_content, banners_data.url_content, banners.is_active
+	FROM banners_data
+	INNER JOIN banners ON banners.data_id = banners_data.id
+	INNER JOIN banner_tags ON banners.id = banner_tags.banner_id 
+	GROUP BY banners.id, banners.feature_id, banners_data.title, banners_data.text_content, banners_data.url_content, banners.is_active
+`
+	query_tag := `SELECT banner_tags.tag_id FROM banner_tags
+	INNER JOIN banners ON banners.id = banner_tags.banner_id 
+	WHERE banners.id = $1`
+	var res []model.RequestFiltredBodyBanners
+	rows, err := pg.Db.Query(query)
+	if err != nil{
+		return []model.RequestFiltredBodyBanners{}, err
+	}
+	for rows.Next(){
+		var buf model.RequestFiltredBodyBanners
+		if err = rows.Scan(&buf.BannerId, &buf.FeatureId, &buf.Content.Title, &buf.Content.TextContent, &buf.Content.UrlContent, &buf.IsActive); err != nil{
+			return []model.RequestFiltredBodyBanners{}, err
+		}
+		tags, err := pg.Db.Query(query_tag, buf.BannerId)
+		if err != nil{
+			return []model.RequestFiltredBodyBanners{}, err
+		}
+		for tags.Next(){
+			var tag int
+			if err := tags.Scan(&tag); err != nil{
+				return []model.RequestFiltredBodyBanners{}, err
+			}
+			buf.TagIds = append(buf.TagIds, tag)
+		}
+		res = append(res, buf)
+
+	}
+	return res, nil
+}

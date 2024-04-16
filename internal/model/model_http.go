@@ -26,14 +26,14 @@ type GetUserBannerParam struct{
 	Token           string 
 	TagID           int64  `form:"tag_id" binding:"required"`
 	FeatureID       int64  `form:"feature_id" binding:"required"`
-	UseLastRevision bool   `form:"use_last_revision" binding:"required"`
+	UseLastRevision bool   `form:"use_last_revision"`
 }
 
 type GetUserFiltredBannerParam struct{
 	Token           string 
 	TagID           int64  
 	FeatureID       int64  
-	UseLastRevision bool   `form:"use_last_revision" binding:"required"`
+	UseLastRevision bool   `form:"use_last_revision"`
 	Limit 			int64	`form "limit" binding:"required"`
 	Ofset			int64	`form "offset" binding:"required"`
 }
